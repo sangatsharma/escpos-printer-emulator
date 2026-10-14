@@ -1,0 +1,27 @@
+{
+  "http": { "host": "127.0.0.1", "port": 9180 },
+  "dataDir": "data",
+  "idleMs": 1500,
+  "printers": [
+    {
+      "name": "Counter (80mm)",
+      "host": "127.0.0.21",
+      "port": 9100,
+      "paper": 80,
+      "type": "Thermal"
+    },
+    {
+      "name": "Kitchen (58mm)",
+      "host": "127.0.0.22",
+      "port": 9100,
+      "paper": 58,
+      "type": "Thermal"
+    },
+    {
+      "name": "Bar (dot matrix)",
+      "host": "127.0.0.23",
+      "port": 9100,
+      "type": "Dot Matrix"
+    }
+  ]
+}
