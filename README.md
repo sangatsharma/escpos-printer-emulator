@@ -196,3 +196,7 @@ npm run samples      # rebuild samples/*.bin
 | `bits`  | `x y bw bh sx sy data` (base64, MSB-first rows), for images, QR and other 2D symbols     |
 | `bars`  | `x y h mw sbs` (bar/space module widths), for linear barcodes                            |
 | `box`   | `x y w h label`, a placeholder for something only real hardware has (NV logos by key)    |
+
+## License
+
+[MIT](LICENSE)

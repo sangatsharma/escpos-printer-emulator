@@ -12,6 +12,7 @@
     "jetdirect",
     "9100"
   ],
+  "license": "MIT",
   "type": "module",
   "bin": {
     "escpos-emulator": "./dist/cli.js"
