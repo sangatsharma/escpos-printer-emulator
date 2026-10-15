@@ -1,22 +1,66 @@
 {
   "name": "escpos-printer-emulator",
-  "version": "1.0.0",
-  "description": "Network ESC/POS printer emulator: listens on a printer's IP:port (raw 9100, as QZ Tray uses) and renders the receipt it would print.",
+  "version": "2.0.0",
+  "description": "Network ESC/POS receipt printer emulator: listens on raw TCP (port 9100) like a real printer and renders exactly what it would print in a live web viewer.",
+  "keywords": [
+    "escpos",
+    "esc/pos",
+    "receipt",
+    "thermal printer",
+    "emulator",
+    "pos",
+    "jetdirect",
+    "9100"
+  ],
+  "license": "MIT",
   "type": "module",
-  "private": true,
   "bin": {
-    "escpos-emulator": "./bin/escpos-emulator.js"
+    "escpos-emulator": "./dist/cli.js"
   },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "printers.example.json",
+    "scripts"
+  ],
   "scripts": {
-    "start": "node bin/escpos-emulator.js start",
-    "test": "node --test \"test/*.test.js\""
+    "dev": "concurrently -k -n server,web -c blue,magenta \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "tsx watch src/cli.ts start",
+    "dev:web": "vite",
+    "build": "npm run build:server && npm run build:web",
+    "build:server": "tsc -p tsconfig.build.json",
+    "build:web": "vite build",
+    "start": "node dist/cli.js start",
+    "test": "node --import tsx --test \"test/*.test.ts\"",
+    "typecheck": "tsc --noEmit && tsc -p web/tsconfig.json --noEmit",
+    "samples": "tsx tools/generate-samples.ts"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "bwip-js": "^4.11.4",
     "iconv-lite": "^0.7.0",
     "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.6",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
   }
 }
