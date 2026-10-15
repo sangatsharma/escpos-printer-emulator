@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { connect } from "node:net";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 import { EscPosPrinter } from "./core/interpreter.js";
@@ -11,12 +12,16 @@ import { EmulatedPrinter } from "./server/printer-server.js";
 import { JobStore } from "./server/store.js";
 import { startWebServer } from "./server/web-server.js";
 
+/** Sample jobs shipped with the package; one level up from both src/ and dist/. */
+const SAMPLES_DIR = fileURLToPath(new URL("../samples/", import.meta.url));
+
 const HELP = `ESC/POS network printer emulator
 
 Usage
   escpos-emulator start   [--config printers.json] [--printer key=val,…]… [--http host:port]
-  escpos-emulator render  <file.bin> [--paper 80] [--type thermal|dot] [--profile id] [--json]
-  escpos-emulator send    <file.bin> <host[:port]>
+  escpos-emulator render  <file.bin | - | --sample name> [--paper 80] [--type thermal|dot] [--profile id] [--json]
+  escpos-emulator send    <file.bin | - | --sample name> <host[:port]>
+  escpos-emulator samples
   escpos-emulator profiles
 
 start     Listen as every configured printer and open the live viewer.
@@ -26,11 +31,15 @@ start     Listen as every configured printer and open the live viewer.
 render    Interpret a captured job offline and print the text rendition.
 send      Send a file to a printer over raw TCP (port ${DEFAULT_PRINTER_PORT} by default),
           the way any POS app or print spooler does.
+samples   List the built-in sample jobs for --sample.
+
+Input     A file path, - for stdin, or --sample <name>.
 
 Examples
   escpos-emulator start --printer name=Kitchen,host=127.0.0.21 --printer name=Bar,host=127.0.0.22,paper=58
   escpos-emulator start --printer name=Desk,port=9101
-  escpos-emulator send samples/receipt-80.bin 127.0.0.21
+  escpos-emulator send --sample receipt-80 127.0.0.21
+  printf 'Hello\\n\\035VA\\003' | escpos-emulator send - 127.0.0.21
 `;
 
 type Values = {
@@ -40,9 +49,29 @@ type Values = {
   paper?: string;
   type?: string;
   profile?: string;
+  sample?: string;
   json?: boolean;
   help?: boolean;
 };
+
+function listSamples(): string[] {
+  if (!existsSync(SAMPLES_DIR)) return [];
+  return readdirSync(SAMPLES_DIR)
+    .filter((f) => f.endsWith(".bin"))
+    .map((f) => f.slice(0, -4))
+    .sort();
+}
+
+/** The job bytes: a built-in sample, stdin ("-"), or a file. */
+function readInput(file: string | undefined, sample: string | undefined): Buffer {
+  if (sample) {
+    const path = join(SAMPLES_DIR, `${sample.replace(/\.bin$/, "")}.bin`);
+    if (!existsSync(path)) throw new Error(`Unknown sample "${sample}". Available: ${listSamples().join(", ")}`);
+    return readFileSync(path);
+  }
+  if (!file) throw new Error("No input: give a file, - for stdin, or --sample <name>");
+  return readFileSync(file === "-" ? 0 : file);
+}
 
 function log(msg: string): void {
   console.log(`${new Date().toLocaleTimeString()}  ${msg}`);
@@ -99,13 +128,13 @@ async function start(values: Values): Promise<void> {
   process.on("SIGTERM", shutdown);
 }
 
-function render(file: string, values: Values): void {
+function render(data: Buffer, values: Values): void {
   const profile = resolveProfile({ profile: values.profile, paper: values.paper, type: values.type });
   const printer = new EscPosPrinter(profile, {
     respond: (b) => console.error(`(status reply ${[...b].map((x) => x.toString(16)).join(" ")})`),
   });
   printer.beginJob();
-  printer.write(readFileSync(file));
+  printer.write(data);
   const job = printer.endJob();
   if (values.json) {
     console.log(JSON.stringify({ ...job, profile }, null, 2));
@@ -119,9 +148,8 @@ function render(file: string, values: Values): void {
   for (const w of job.warnings) console.log(`  ⚠ ${w}`);
 }
 
-function send(file: string, target: string): Promise<void> {
+function send(data: Buffer, target: string): Promise<void> {
   const [host = "127.0.0.1", port = String(DEFAULT_PRINTER_PORT)] = target.split(":");
-  const data = readFileSync(file);
   return new Promise((resolveSend, reject) => {
     const socket = connect(Number(port), host, () => {
       socket.end(data, () => log(`sent ${data.length} bytes to ${host}:${port}`));
@@ -142,6 +170,7 @@ async function main(): Promise<void> {
       paper: { type: "string" },
       type: { type: "string" },
       profile: { type: "string" },
+      sample: { type: "string", short: "s" },
       json: { type: "boolean" },
       help: { type: "boolean", short: "h" },
     },
@@ -151,12 +180,17 @@ async function main(): Promise<void> {
   if (values.help || command === "help") return console.log(HELP);
   if (command === "start") return start(values);
   if (command === "render") {
-    if (!args[0]) throw new Error("render needs a file");
-    return render(args[0], values);
+    return render(readInput(args[0], values.sample), values);
   }
   if (command === "send") {
-    if (!args[0] || !args[1]) throw new Error("send needs <file> <host[:port]>");
-    return send(args[0], args[1]);
+    // With --sample the only positional is the target.
+    const [file, target] = values.sample ? [undefined, args[0]] : args;
+    if (!target) throw new Error("send needs <file | - | --sample name> <host[:port]>");
+    return send(readInput(file, values.sample), target);
+  }
+  if (command === "samples") {
+    for (const name of listSamples()) console.log(name);
+    return;
   }
   if (command === "profiles") {
     for (const [id, p] of Object.entries(PROFILES)) {

@@ -1,6 +1,6 @@
 {
   "name": "escpos-printer-emulator",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "description": "Network ESC/POS receipt printer emulator: listens on raw TCP (port 9100) like a real printer and renders exactly what it would print in a live web viewer.",
   "keywords": [
     "escpos",
@@ -12,6 +12,15 @@
     "jetdirect",
     "9100"
   ],
+  "homepage": "https://github.com/sangatsharma/escpos-printer-emulator#readme",
+  "bugs": {
+    "url": "https://github.com/sangatsharma/escpos-printer-emulator/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sangatsharma/escpos-printer-emulator.git"
+  },
+  "author": "sangatsharma (https://github.com/sangatsharma)",
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -27,6 +36,7 @@
   },
   "files": [
     "dist",
+    "samples",
     "printers.example.json",
     "scripts"
   ],
@@ -40,7 +50,8 @@
     "start": "node dist/cli.js start",
     "test": "node --import tsx --test \"test/*.test.ts\"",
     "typecheck": "tsc --noEmit && tsc -p web/tsconfig.json --noEmit",
-    "samples": "tsx tools/generate-samples.ts"
+    "samples": "tsx tools/generate-samples.ts",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "engines": {
     "node": ">=20"
