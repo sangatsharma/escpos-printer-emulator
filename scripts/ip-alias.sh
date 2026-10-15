@@ -6,8 +6,8 @@
 #   scripts/ip-alias.sh list
 #
 # Any 127.x.x.x address already works on Linux with no setup. Use this only
-# when the printer record must keep a LAN-style IP. QZ Tray connects from this
-# same machine, so a loopback alias is enough — nothing on the network sees it.
+# when your app must keep a LAN-style printer IP. If the app runs on this same
+# machine, a loopback alias is enough: nothing else on the network sees it.
 set -euo pipefail
 
 action="${1:-list}"

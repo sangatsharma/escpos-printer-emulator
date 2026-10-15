@@ -4,24 +4,24 @@
   "idleMs": 1500,
   "printers": [
     {
-      "name": "Counter (80mm)",
+      "name": "Front desk (80mm)",
       "host": "127.0.0.21",
       "port": 9100,
       "paper": 80,
-      "type": "Thermal"
+      "type": "thermal"
     },
     {
       "name": "Kitchen (58mm)",
       "host": "127.0.0.22",
       "port": 9100,
       "paper": 58,
-      "type": "Thermal"
+      "type": "thermal"
     },
     {
-      "name": "Bar (dot matrix)",
+      "name": "Back office (dot matrix)",
       "host": "127.0.0.23",
       "port": 9100,
-      "type": "Dot Matrix"
+      "type": "dot matrix"
     }
   ]
 }
